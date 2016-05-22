@@ -4,13 +4,13 @@ import Test.QuickCheck
 
 import ParaFormat
 
-eqf :: [[Int]] -> [[Int]] -> Bool
-xss `eqf` yss = f xss == f yss
+eqf :: Int -> [[Int]] -> [[Int]] -> Bool
+eqf optw xss yss = f optw xss == f optw yss
 
-optpart_correct :: Int -> Int -> Property
-optpart_correct wordWth wordNum  =
+parafmt_correct :: Int -> Int -> Int -> Property
+parafmt_correct optw wordWth wordNum  =
   forAll (inpGen wordWth wordNum) $
-    \xs -> optpart_spec xs `eqf` opt xs
+    \xs -> eqf optw (parafmt_spec optw xs) (parafmt optw xs)
 
 inpGen :: Int -> Int -> Gen [Int]
 inpGen wordWth wordNum = sized (\n -> genList (wordNum `min` n))

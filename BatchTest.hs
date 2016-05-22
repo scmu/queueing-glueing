@@ -13,7 +13,6 @@ batch_correct s maxWeight maxSpan maxLen  =
   forAll (inpGen maxWeight maxSpan maxLen) $
     \xs -> eqf s (batch_spec s xs) (batch s xs)
 
-
 inpGen :: Int -> Int -> Int -> Gen [(Int,Int)]
 inpGen maxWeight maxSpan maxLen = sized (\n -> genList (maxLen `min` n))
   where genList 0 = return []

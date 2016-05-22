@@ -4,13 +4,13 @@ import Test.QuickCheck
 
 import SizedPart
 
-eqf :: [[Int]] -> [[Int]] -> Bool
-xss `eqf` yss = f xss == f yss
+eqf :: Int -> [[Int]] -> [[Int]] -> Bool
+eqf optw xss yss = f optw xss == f optw yss
 
-optpart_correct :: Int -> Int -> Property
-optpart_correct wordWth wordNum  =
+sizedpart_correct :: Int -> Int -> Int -> Property
+sizedpart_correct optw wordWth wordNum  =
   forAll (inpGen wordWth wordNum) $
-    \xs -> optpart_spec xs `eqf` opt xs
+    \xs -> eqf optw (sizedpart_spec optw xs) (sizedpart optw xs)
 
 inpGen :: Int -> Int -> Gen [Int]
 inpGen wordWth wordNum = sized (\n -> genList (wordNum `min` n))

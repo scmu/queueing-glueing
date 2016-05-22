@@ -25,22 +25,22 @@ minBy c (x:xs)
 
 --------------------------------------------
 
-optw :: Int
-optw = 70
+-- optw :: Int
+-- optw = 70
 
-valid :: [Elem] -> Bool
-valid xs = (sum xs + length xs - 1) <= optw
+valid :: Int -> [Elem] -> Bool
+valid optw xs = (sum xs + length xs - 1) <= optw
 
-w :: [Elem] -> Int
-w xs = (optw - sum xs - length xs + 1)^2
+w :: Int -> [Elem] -> Int
+w optw xs = (optw - sum xs - length xs + 1)^2
 
-f :: [[Elem]] -> Int
-f [] = 0
-f [xs] = 0
-f (xs:xss) = w xs + f xss
+f :: Int -> [[Elem]] -> Int
+f _ [] = 0
+f _ [xs] = 0
+f optw (xs:xss) = w optw xs + f optw xss
 
-optpart_spec :: [Int] -> [[Int]]
-optpart_spec = minBy f . filter (all valid) . parts
+parafmt_spec :: Int -> [Int] -> [[Int]]
+parafmt_spec optw = minBy (f optw) . filter (all (valid optw)) . parts
 
 ---------------------------------------------
 
@@ -69,8 +69,8 @@ lengthMemo (Mem _ l) = l
 wlMemo :: Memo -> Int
 wlMemo (Mem w l) = w + l - 1
 
-weightMemo :: Memo -> Int
-weightMemo (Mem w l) = (optw - w - l + 1)^2
+weightMemo :: Int -> Memo -> Int
+weightMemo optw (Mem w l) = (optw - w - l + 1)^2
 
 catMemo :: Memo -> Memo -> Memo
 catMemo (Mem w1 l1) (Mem w2 l2) = Mem (w1+w2) (l1+l2)
@@ -91,8 +91,8 @@ lengthSeg' (Seg' _ m) = lengthMemo m
 wlSeg' :: Seg' -> Int
 wlSeg' (Seg' _ m) = wlMemo m
 
-weightSeg' :: Seg' -> Int
-weightSeg' (Seg' _ m) = weightMemo m
+weightSeg' :: Int -> Seg' -> Int
+weightSeg' optw (Seg' _ m) = weightMemo optw m
 
 widthSeg :: Seg -> Int
 widthSeg (Seg _ m) = widthMemo m
@@ -103,8 +103,8 @@ lengthSeg (Seg _ m) = lengthMemo m
 wlSeg :: Seg -> Int
 wlSeg (Seg _ m) = wlMemo m
 
-weightSeg :: Seg -> Int
-weightSeg (Seg _ m) = weightMemo m
+weightSeg :: Int -> Seg -> Int
+weightSeg optw (Seg _ m) = weightMemo optw m
 
 scat :: Seg' -> Seg' -> Seg'
 scat (Seg' xs m) (Seg' ys n) = Seg' (xs `Join` ys) (catMemo m n)
@@ -124,9 +124,9 @@ singleSeg (Seg' xs m) = Seg (singleton (Seg' xs m)) m
 emptyParts :: Parts
 emptyParts = Parts [] 0
 
-pcons :: Seg -> Parts -> Parts
-pcons xs (Parts [] _) = Parts [xs] 0
-pcons xs (Parts xss c) = Parts (xs:xss) (weightSeg xs + c)
+pcons :: Int -> Seg -> Parts -> Parts
+pcons optw xs (Parts [] _) = Parts [xs] 0
+pcons optw xs (Parts xss c) = Parts (xs:xss) (weightSeg optw xs + c)
 
 phead :: Parts -> Seg
 phead (Parts xss _) = head xss
@@ -170,10 +170,10 @@ sviewr2 (sviewr -> Just (xs', x))
 
 -- Main algorithm
 
-opt :: [Elem] -> [[Elem]]
-opt inp = pflatten (optparts ! (length inp))
+parafmt :: Int -> [Elem] -> [[Elem]]
+parafmt optw inp = pflatten (optparts ! (length inp))
   where
-     g n xs = weightSeg xs + cost (optparts ! (n - lengthSeg xs))
+     g n xs = weightSeg optw xs + cost (optparts ! (n - lengthSeg xs))
 
      sums = array (0, length inp) (scanr (\x (i, s) -> (i+1, x+s+1)) (0,0) inp)
 
@@ -189,7 +189,7 @@ opt inp = pflatten (optparts ! (length inp))
                    map (\(n, xs) -> (n, optpart n xs)) (scanr (\x (i,xs) -> (i+1, x:xs)) (0, []) inp)
 
      optpart n [] = emptyParts
-     optpart n xs = ys `pcons` (optparts ! (n - lengthSeg ys))
+     optpart n xs = pcons optw ys (optparts ! (n - lengthSeg ys))
        where ys = optpref n xs
 
      optpref n [x] = singleSeg (singleSeg' x)
