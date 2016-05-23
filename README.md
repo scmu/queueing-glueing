@@ -7,8 +7,8 @@ know that two of three candidate solutions could be optimal. The algorithm
 works by keeping a queue of lists, glueing them from one end, while chopping
 from the other end, hence the name.
 
-The code in this repository accompanies our paper Queueing and Glueing for
-Optimal Partitioning (MCL16), in which we give a formal derivation of the
+The code in this repository accompanies our paper [Queueing and Glueing for
+Optimal Partitioning (MCL16)][MCL16], in which we give a formal derivation of the
 algorithm, and demonstrate it with several non-trivial examples.
 
 The code is split into the following parts:
@@ -51,4 +51,6 @@ run very slow for inputs longer than, say, 15 elements.
 
 ## References
 
-* (MCL16) Shin-Cheng Mu, Yu-Hsi Chiang, and Yu-Han Lyu. Queueing and glueing for optimal partitioning. In *International Conference on Functional Programming*, 2016. Accepted.
+* [(MCL16)][MCL16] Shin-Cheng Mu, Yu-Hsi Chiang, and Yu-Han Lyu. [Queueing and glueing for optimal partitioning][MCL16]. In *International Conference on Functional Programming*, 2016. Accepted.
+
+[MCL16]: http://www.iis.sinica.edu.tw/~scm/2016/queueing-and-glueing-for-optimal-partitioning/
