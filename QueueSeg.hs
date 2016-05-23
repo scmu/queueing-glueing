@@ -25,6 +25,9 @@ data SQDict a b c r = SQDict {
 cost :: Part a b c r -> r
 cost (Part _ _ r) = r
 
+sMemo :: Seg a b -> b
+sMemo (Seg _ m _) = m
+
 qMemo :: Queue a b -> b
 qMemo (Queue _ m _) = m
 
