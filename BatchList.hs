@@ -31,8 +31,6 @@ d s optArr n xs = fromIntegral (cost (optArr ! n) - cost (optArr ! m)) /
                   fromIntegral (bspan s xs - s)
     where m = n - length xs
           cost = f s . map concat
-
-
 ---
 
 batch_spec :: Int -> [Job] -> [[Job]]

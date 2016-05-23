@@ -6,30 +6,16 @@ import Data.Sequence (Seq(..), singleton, empty,
                       ViewL(..), viewl, (<|),
                       ViewR(..), viewr, (|>))
 
+import Spec
 
-splits :: [a] -> [([a], [a])]
-splits [] = []
-splits (x:xs) = ([x], xs) : map (\(ys, zs) -> (x:ys, zs)) (splits xs)
+-- f :: Int -> [[Int]] -> Int
+-- f optw = sum . map (\xs -> (optw - sum xs - length xs + 1)^2)
 
-parts :: [a] -> [[[a]]]
-parts [] = [[]]
-parts xs = concat . map extparts . splits $ xs
-  where extparts (xs, ys) = map (xs:) (parts ys)
-
-minBy :: (a -> Int) -> [a] -> a
-minBy c [x] = x
-minBy c (x:xs)
-  | c x <= c y = x
-  | otherwise  = y
- where y = minBy c xs
-
---------------------------------------------
-
-f :: Int -> [[Int]] -> Int
-f optw = sum . map (\xs -> (optw - sum xs - length xs + 1)^2)
+w :: Int -> ([Int], [Int]) -> Int
+w optw (xs, _) = (optw - sum xs - length xs + 1)^2
 
 sizedpart_spec :: Int -> [Int] -> [[Int]]
-sizedpart_spec optw = minBy (f optw) . parts
+sizedpart_spec optw = opt_spec (w optw)
 
 ---------------------------------------------
 

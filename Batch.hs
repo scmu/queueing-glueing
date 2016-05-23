@@ -6,24 +6,8 @@ import Data.Sequence (Seq(..), singleton, empty,
                       ViewL(..), viewl, (<|),
                       ViewR(..), viewr, (|>))
 
+import Spec
 
-splits :: [a] -> [([a], [a])]
-splits [] = []
-splits (x:xs) = ([x], xs) : map (\(ys, zs) -> (x:ys, zs)) (splits xs)
-
-parts :: [a] -> [[[a]]]
-parts [] = [[]]
-parts xs = concat . map extparts . splits $ xs
-  where extparts (xs, ys) = map (xs:) (parts ys)
-
-minBy :: (a -> Int) -> [a] -> a
-minBy c [x] = x
-minBy c (x:xs)
-  | c x <= c y = x
-  | otherwise  = y
- where y = minBy c xs
-
---------------------------------------------
 type Job = (Int, Int)
 
 tm :: Job -> Int
@@ -41,13 +25,15 @@ ftime s = sum . map (bspan s)
 weights :: [[Job]] -> Int
 weights = sum . map wt . concat
 
-f :: Int -> [[Job]] -> Int
-f s [] = 0
-f s (xs:xss) = bspan s xs * weights (xs:xss) + f s xss
+w :: Int -> ([Job], [Job]) -> Int
+w s (xs, ys) = bspan s xs * sum (map wt (xs ++ ys))
 
+-- f :: Int -> [[Job]] -> Int
+-- f s [] = 0
+-- f s (xs:xss) = bspan s xs * weights (xs:xss) + f s xss
 
 batch_spec :: Int -> [Job] -> [[Job]]
-batch_spec s = minBy (f s) . parts
+batch_spec s = opt_spec (w s)
 
 ---------------------------------------------
 data JList a = Sing a | Join (JList a) (JList a) deriving Show
@@ -178,9 +164,9 @@ batch s inp = pflatten (optArr ! (length inp))
      optpref n (x:xs) = minchop n (singleSeg' x `scons` prepend (n-1) (phead         (optArr ! (n-1))))
 
      delta :: Int -> Seg' -> Double
-     delta n xs = fromIntegral (cost (optArr ! n) - cost (optArr ! m)) / fromIntegral (bspanSeg' s xs - s)
-       where
-         m = n - lengthSeg' xs
+     delta n xs = fromIntegral (cost (optArr ! n) - cost (optArr ! m)) /
+                  fromIntegral (bspanSeg' s xs - s)
+       where m = n - lengthSeg' xs
 
      prepend :: Int -> Seg -> Seg
      prepend n (sviewl2 -> Left xs) = singleSeg xs
