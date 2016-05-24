@@ -15,30 +15,31 @@ The code is split into the following parts:
 
 * **OptPartList**
   A conceptual presentation of the algorithm representing queues and join lists
-  using Haskell lists.
+  using Haskell lists. The main algorithm, `opt`, is parameterised by two functions `w` (for computing costs) and `delta` (for deciding whether to merge two segments).
+
+* **OptPart, QueueSeg**
+  A linear-time implementation of the queueing-glueing algorithm. Queues are implemented using `Data.Sequence`. The main algorithm `opt` is now parameterised by `delta` and a dictionary that specifies how to compute cached data in the queue.
 
 * **BatchList, BatchListTest**
-  Solving the ne-machine batching problem using `OptPartList`. To test the code, load `BatchListTest.hs` into `ghci` and try, for example,
+  Solving the one-machine batching problem using `OptPartList`. To test the code, load `BatchListTest.hs` into `ghci` and try, for example,
     `verboseCheck (batch_correct 2 5 8 15)`
   where 2 is the startup overhead, 5 is the maximum weight, 8 is the maximum
   span, and 15 is the maximum length of the input.
 
 * **Batch, BatchTest**
-  For the one-machine batching problem. To test the code, load
+  Solving the one-machine batching problem using `OptPart`. To test the code, load
   `BatchTest.hs` into `ghci` and try, for example,
     `verboseCheck (batch_correct 2 5 8 15)`
   where 2 is the startup overhead, 5 is the maximum weight, 8 is the maximum span, and 15 is the maximum length of the input.
 
 * **SizedPart, SizedPartTest**
-
-  For the size-specific partition problem.
+  For the size-specific partition problem, using `OptPart`.
   Load `SizedPartTest.hs` into `ghci` and try, for example
     `verboseCheck (sizedpart_correct 30 8 15)`
   where 30 is the optimal size, 8 the maximum size of elements, and
   15 the maximum length of the input list.
 
 * **ParaFormat, ParaFormatTest**
-
   For paragraph formatting problem.
   Load `ParaFormatTest.hs` into `ghci` and try, for example
     `verboseCheck (parafmt_correct 30 8 15)`
