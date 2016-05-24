@@ -15,7 +15,7 @@ opt :: forall e b c r t . (Num r, Ord r, Ord t) =>
 opt dt delta inp = pflatten (optArr ! (length inp))
  where
   g :: Nat -> Queue e b -> r
-  g n xs = cost (pcons dt xs (optArr ! (n - lengthQueue xs)))
+  g n xs = cost (pcons dt xs (optArr ! (n - qLength xs)))
 
   optArr :: Array Nat (Part e b c r)
   optArr = array (0, length inp) $
@@ -23,7 +23,7 @@ opt dt delta inp = pflatten (optArr ! (length inp))
 
   optpart :: Nat -> [e] -> Part e b c r
   optpart n [] = emptyPart dt
-  optpart n xs = pcons dt ys (optArr ! (n - lengthQueue ys))
+  optpart n xs = pcons dt ys (optArr ! (n - qLength ys))
     where ys = optpref n xs
 
   optpref :: Nat -> [e] -> Queue e b
@@ -43,7 +43,7 @@ opt dt delta inp = pflatten (optArr ! (length inp))
   prepend :: Nat -> Queue e b -> Queue e b
   prepend n (qviewl2 dt -> Left xs) = singleQueue xs
   prepend n (qviewl2 dt -> Right (xs, ys, yss))
-    | delta optArr n xs <= delta optArr (n - lengthSeg xs) ys =
+    | delta optArr n xs <= delta optArr (n - sLength xs) ys =
          prepend n ((xs |++ ys) |>> yss)
     | otherwise = xs |>> (ys |>> yss)
    where (|>>) = qcons dt

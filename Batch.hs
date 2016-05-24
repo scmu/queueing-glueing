@@ -43,7 +43,7 @@ batchDict s =
   SQDict 0 pMemoCons 0 pCostCons
          memoSing memoCat memoDeQL memoDeQR
  where pMemoCons (sp, w) w'   = w + w'
-       pCostCons (sp, w) w' r = (s + sp) * (w + w') + r
+       pCostCons (sp, w) _ w' r = (s + sp) * (w + w') + r
        memoSing (sp, w) = (sp, w)
        memoCat  (s1,w1) (s2,w2) = (s1+s2, w1+w2)
        memoDeQL (s1,w1) (s2,w2) = (s2-s1, w2-w1)
@@ -56,5 +56,5 @@ batch s = opt (batchDict s) delta
         delta optArr n xs =
            fromIntegral (cost (optArr ! n) - cost (optArr ! m)) /
            fromIntegral (spanSeg xs)
-          where m = n - lengthSeg xs
+          where m = n - sLength xs
                 spanSeg = fst . sMemo

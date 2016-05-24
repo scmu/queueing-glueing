@@ -15,7 +15,7 @@ data SQDict a b c r = SQDict {
     pMemoEmpty :: c
   , pMemoCons  :: b -> c -> c
   , pCostZero  :: r
-  , pCostCons  :: b -> c -> r -> r
+  , pCostCons  :: b -> Int -> c -> r -> r
   , memoSing   :: a -> b
   , memoCat    :: b -> b -> b
   , memoDeQL   :: b -> b -> b
@@ -34,11 +34,11 @@ qMemo (Queue _ m _) = m
 pMemo :: Part a b c r -> c
 pMemo (Part _ c _) = c
 
-lengthSeg :: Seg a b -> Int
-lengthSeg (Seg _ _ n) = n
+sLength :: Seg a b -> Int
+sLength (Seg _ _ n) = n
 
-lengthQueue :: Queue a b -> Int
-lengthQueue (Queue _ _ n) = n
+qLength :: Queue a b -> Int
+qLength (Queue _ _ n) = n
 
 sapp :: SQDict a b c r -> Seg a b -> Seg a b -> Seg a b
 sapp d (Seg xs u m) (Seg ys v n) =
@@ -64,7 +64,7 @@ emptyPart d = Part [] (pMemoEmpty d) (pCostZero d)
 pcons :: SQDict a b c r -> Queue a b -> Part a b c r -> Part a b c r
 pcons d xs (Part xss c r) =
   Part (xs:xss) (pMemoCons d (qMemo xs) c)
-                (pCostCons d (qMemo xs) c r)
+                (pCostCons d (qMemo xs) (qLength xs) c r)
 
 phead :: Part a b c r -> Queue a b
 phead (Part xss _ _) = head xss
