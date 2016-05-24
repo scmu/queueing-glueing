@@ -6,216 +6,112 @@ import Data.Sequence (Seq(..), singleton, empty,
                       ViewL(..), viewl, (<|),
                       ViewR(..), viewr, (|>))
 
-
-splits :: [a] -> [([a], [a])]
-splits [] = []
-splits (x:xs) = ([x], xs) : map (\(ys, zs) -> (x:ys, zs)) (splits xs)
-
-parts :: [a] -> [[[a]]]
-parts [] = [[]]
-parts xs = concat . map extparts . splits $ xs
-  where extparts (xs, ys) = map (xs:) (parts ys)
-
-minBy :: (a -> Int) -> [a] -> a
-minBy c [x] = x
-minBy c (x:xs)
-  | c x <= c y = x
-  | otherwise  = y
- where y = minBy c xs
-
---------------------------------------------
-
--- optw :: Int
--- optw = 70
-
-valid :: Int -> [Elem] -> Bool
-valid optw xs = (sum xs + length xs - 1) <= optw
-
-w :: Int -> [Elem] -> Int
-w optw xs = (optw - sum xs - length xs + 1)^2
-
-f :: Int -> [[Elem]] -> Int
-f _ [] = 0
-f _ [xs] = 0
-f optw (xs:xss) = w optw xs + f optw xss
-
-parafmt_spec :: Int -> [Int] -> [[Int]]
-parafmt_spec optw = minBy (f optw) . filter (all (valid optw)) . parts
-
----------------------------------------------
+import Spec
+import QueueSeg hiding (pcons)
 
 type Length = Int
 type Width = Int
 type Elem = Int
+type Nat = Int
 
-data JList a = Sing a | Join (JList a) (JList a)
-data Memo = Mem !Width !Length
-data Seg' = Seg' (JList Elem) !Memo
-data Seg = Seg (Seq Seg') !Memo
-data Parts = Parts [Seg] !Int
+valid :: Width -> [Elem] -> Bool
+valid optw xs = (sum xs + length xs - 1) <= optw
 
-emptyMemo :: Memo
-emptyMemo = Mem 0 0
+w :: Width -> [Elem] -> Int
+w optw xs = (optw - sum xs - length xs + 1)^2
 
-singleMemo :: Elem -> Memo
-singleMemo x = Mem x 1
+f :: Width -> [[Elem]] -> Int
+f _ [] = 0
+f _ [xs] = 0
+f optw (xs:xss) = w optw xs + f optw xss
 
-widthMemo :: Memo -> Width
-widthMemo (Mem w _) = w
+parafmt_spec :: Width -> [Elem] -> [[Elem]]
+parafmt_spec optw = minBy (f optw) . filter (all (valid optw)) . parts
 
-lengthMemo :: Memo -> Length
-lengthMemo (Mem _ l) = l
+---------------------------------------------
 
-wlMemo :: Memo -> Int
-wlMemo (Mem w l) = w + l - 1
+sizeDict :: Width -> SQDict Elem Width () Int
+sizeDict optw =
+  SQDict () pMemoCons 0 pCostCons
+         memoSing memoCat memoDeQL memoDeQR
+ where pMemoCons _ _  = ()
+       pCostCons w l () r = (optw - w - l + 1)^2 + r
+       memoSing w = w
+       memoCat  w1 w2 = w1 + w2
+       memoDeQL w1 w2 = w2 - w1
+       memoDeQR w1 w2 = w1 - w2
 
-weightMemo :: Int -> Memo -> Int
-weightMemo optw (Mem w l) = (optw - w - l + 1)^2
+  -- use this in place of the standard pcons.
 
-catMemo :: Memo -> Memo -> Memo
-catMemo (Mem w1 l1) (Mem w2 l2) = Mem (w1+w2) (l1+l2)
-
-decatMemoL :: Memo -> Memo -> Memo
-decatMemoL (Mem w1 l1) (Mem w2 l2) = Mem (w2-w1) (l2-l1)
-
-decatMemoR :: Memo -> Memo -> Memo
-decatMemoR (Mem w1 l1) (Mem w2 l2) = Mem (w1-w2) (l1-l2)
-
-
-widthSeg' :: Seg' -> Int
-widthSeg' (Seg' _ m) = widthMemo m
-
-lengthSeg' :: Seg' -> Int
-lengthSeg' (Seg' _ m) = lengthMemo m
-
-wlSeg' :: Seg' -> Int
-wlSeg' (Seg' _ m) = wlMemo m
-
-weightSeg' :: Int -> Seg' -> Int
-weightSeg' optw (Seg' _ m) = weightMemo optw m
-
-widthSeg :: Seg -> Int
-widthSeg (Seg _ m) = widthMemo m
-
-lengthSeg :: Seg -> Int
-lengthSeg (Seg _ m) = lengthMemo m
-
-wlSeg :: Seg -> Int
-wlSeg (Seg _ m) = wlMemo m
-
-weightSeg :: Int -> Seg -> Int
-weightSeg optw (Seg _ m) = weightMemo optw m
-
-scat :: Seg' -> Seg' -> Seg'
-scat (Seg' xs m) (Seg' ys n) = Seg' (xs `Join` ys) (catMemo m n)
-
-scons :: Seg' -> Seg -> Seg
-scons (Seg' x m) (Seg xs n) = Seg ((Seg' x m) <| xs) (catMemo m n)
-
-ssnoc :: Seg -> Seg' -> Seg
-ssnoc (Seg xs m) (Seg' x n) = Seg (xs |> (Seg' x n)) (catMemo m n)
-
-singleSeg' :: Elem -> Seg'
-singleSeg' x = Seg' (Sing x) (singleMemo x)
-
-singleSeg :: Seg' -> Seg
-singleSeg (Seg' xs m) = Seg (singleton (Seg' xs m)) m
-
-emptyParts :: Parts
-emptyParts = Parts [] 0
-
-pcons :: Int -> Seg -> Parts -> Parts
-pcons optw xs (Parts [] _) = Parts [xs] 0
-pcons optw xs (Parts xss c) = Parts (xs:xss) (weightSeg optw xs + c)
-
-phead :: Parts -> Seg
-phead (Parts xss _) = head xss
-
-cost :: Parts -> Int
-cost (Parts _ c) = c
-
-jflatten :: JList Int -> [Int]
-jflatten (Sing x) = [x]
-jflatten (Join xs ys) = jflatten xs ++ jflatten ys
-
-sflatten' :: Seq Seg' -> [Int]
-sflatten' (viewl -> EmptyL) = []
-sflatten' (viewl -> (Seg' xs _) :< yss) = jflatten xs ++ sflatten' yss
-
-sflatten :: Seg -> [Int]
-sflatten (Seg xss _) = sflatten' xss
-
-pflatten :: Parts -> [[Int]]
-pflatten (Parts xss _) = map sflatten xss
-
-sviewl :: Seg -> Maybe (Seg', Seg)
-sviewl (Seg xs m)
-  | EmptyL <- viewl xs           = Nothing
-  | (Seg' y n) :< ys <- viewl xs = Just (Seg' y n, Seg ys (decatMemoL n m))
-
-sviewl2 :: Seg -> Either Seg' (Seg', Seg', Seg)
-sviewl2 (sviewl -> Just (x, xs'))
-  | Nothing <- sviewl xs'      = Left x
-  | Just (y, ys) <- sviewl xs' = Right (x, y, ys)
-
-sviewr :: Seg -> Maybe (Seg, Seg')
-sviewr (Seg xs m)
-  | EmptyR <- viewr xs           = Nothing
-  | ys :> (Seg' y n) <- viewr xs = Just (Seg ys (decatMemoR m n), Seg' y n)
-
-sviewr2 :: Seg -> Either Seg' (Seg, Seg', Seg')
-sviewr2 (sviewr -> Just (xs', x))
-  | Nothing <- sviewr xs'      = Left x
-  | Just (ys, y) <- sviewr xs' = Right (ys, y, x)
+pcons' :: SQDict a b () Int ->
+          Queue a b -> Part a b () Int -> Part a b () Int
+pcons' d xs (Part [] () _) = Part [xs] () 0
+pcons' d xs (Part xss c r) =
+  Part (xs:xss) (pMemoCons d (qMemo xs) c)
+                (pCostCons d (qMemo xs) (qLength xs) c r)
 
 -- Main algorithm
 
-parafmt :: Int -> [Elem] -> [[Elem]]
-parafmt optw inp = pflatten (optparts ! (length inp))
-  where
-     g n xs = weightSeg optw xs + cost (optparts ! (n - lengthSeg xs))
+parafmt :: Width -> [Elem] -> [[Elem]]
+parafmt optw inp = pflatten (optArr ! (length inp))
+ where
+  inpLength = length inp
 
-     sums = array (0, length inp) (scanr (\x (i, s) -> (i+1, x+s+1)) (0,0) inp)
+  dt :: SQDict Elem Width () Int
+  dt = sizeDict optw
 
-     ws = listArray (0, n) (scanl next (next 0 0) [1..n])
-       where
-         next i j
-           | i >= n = n
-           | sums ! i - sums ! j - 1 <= optw = next (i+1) j
-           | otherwise = i
-         n = length inp
+  g :: Nat -> Queue Elem Width -> Int
+  g n xs = cost (pcons' dt xs (optArr ! (n - qLength xs)))
 
-     optparts = array (0, length inp) $
-                   map (\(n, xs) -> (n, optpart n xs)) (scanr (\x (i,xs) -> (i+1, x:xs)) (0, []) inp)
+  sums = array (0, length inp) (scanr (\x (i, s) -> (i+1, x+s+1)) (0,0) inp)
 
-     optpart n [] = emptyParts
-     optpart n xs = pcons optw ys (optparts ! (n - lengthSeg ys))
+  ws = listArray (0, inpLength) (scanl next (next 0 0) [1.. inpLength])
+    where next i j | i >= inpLength = inpLength
+                   | sums ! i - sums ! j - 1 <= optw = next (i+1) j
+                   | otherwise = i
+
+  optArr :: Array Nat (Part Elem Width () Int)
+  optArr = array (0, inpLength) $
+              map (\(n, xs) -> (n, optpart n xs))
+                  (scanr (\x (i,xs) -> (i+1, x:xs)) (0, []) inp)
+
+  optpart :: Nat -> [Elem] -> Part Elem Width () Int
+  optpart n [] = emptyPart dt
+  optpart n xs = pcons' dt ys (optArr ! (n - qLength ys))
        where ys = optpref n xs
 
-     optpref n [x] = singleSeg (singleSeg' x)
-     optpref n (x:xs) = minchop n (singleSeg' x `scons` prepend (n-1) (phead (optparts ! (n-1))))
+  optpref :: Nat -> [Elem] -> Queue Elem Width
+  optpref n [x] = singleQueue (singleSeg dt x)
+  optpref n (x:xs) =
+    minchop n (qcons dt (singleSeg dt x)
+                (prepend (n-1) (phead (optArr ! (n-1)))))
 
-     delta n xs = fromIntegral (sj^2 - sk^2 + cost (optparts ! n) - cost (optparts ! m)) / fromIntegral (sj - sk)
-       where
-         sj = sums ! n
-         sk = sums ! m
-         m = n - lengthSeg' xs
+  delta :: Nat -> Seg Elem Width -> Double
+  delta n xs =
+     fromIntegral (sj^2 - sk^2 + cost (optArr ! n) - cost (optArr ! m)) / fromIntegral (sj - sk)
+    where sj = sums ! n
+          sk = sums ! m
+          m = n - sLength xs
 
-     prepend :: Int -> Seg -> Seg
-     prepend n (sviewl2 -> Left xs) = singleSeg xs
-     prepend n (sviewl2 -> Right (xs, ys, yss))
-        | delta n xs <= delta m ys && delta n xs <= fromIntegral (2 * (sums ! k - optw - 1)) = prepend n ((xs `scat` ys) `scons` yss)
-        | otherwise                                                                          = xs `scons` (ys `scons` yss)
-       where
-         m = n - lengthSeg' xs
-         k = ws ! (m - lengthSeg' ys)
+  prepend :: Nat -> Queue Elem Width -> Queue Elem Width
+  prepend n (qviewl2 dt -> Left xs) = singleQueue xs
+  prepend n (qviewl2 dt -> Right (xs, ys, yss))
+        | delta n xs <= delta m ys &&
+          delta n xs <= fromIntegral (2 * (sums ! k - optw - 1)) =
+               prepend n ((xs |++ ys) |>> yss)
+        | otherwise = xs |>> (ys |>> yss)
+       where m = n - sLength xs
+             k = ws ! (m - sLength ys)
+             (|>>) = qcons dt
+             (|++) = sapp dt
 
-     minchop :: Int -> Seg -> Seg
-     minchop n (sviewr2 -> Left xs) = singleSeg xs
-     minchop n (sviewr2 -> Right (yss', ys, xs))
-       | wlSeg xss > optw   = minchop n yss
+  minchop :: Nat -> Queue Elem Width -> Queue Elem Width
+  minchop n (qviewr2 dt -> Left xs) = singleQueue xs
+  minchop n (qviewr2 dt -> Right (yss', ys, xs))
+       | wl > optw          = minchop n yss
        | g n yss <= g n xss = minchop n yss
        | otherwise          = xss
-      where
-        yss = yss' `ssnoc` ys
-        xss = yss `ssnoc` xs
+      where (<<|) = qsnoc dt
+            yss = yss' <<| ys
+            xss = yss  <<| xs
+            wl = qMemo xss + qLength xss -1
